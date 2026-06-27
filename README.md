@@ -6,7 +6,7 @@ Generic, reusable Terraform module for provisioning an Azure Virtual Network wit
 
 ```hcl
 module "vnet" {
-  source  = "git::https://github.com/<org>/terraform-azurerm-vnet.git?ref=v1.0.0"
+  source  = "git::https://github.com/KT-MakeDevOpsEasy/terraform-azurerm-vnet.git?ref=v1.0.0"
 
   name                = "vnet-myapp-dev-eus"
   resource_group_name = azurerm_resource_group.this.name
@@ -82,3 +82,8 @@ terraform test
 | nsg\_ids | Map of subnet name to NSG ID |
 
 <!-- END_TF_DOCS -->
+
+## Related Repos
+
+- [azure-challenges](https://github.com/KT-MakeDevOpsEasy/azure-challenges) — Deployment code using this module (Challenge 1 + Challenge 2)
+- [terraform-azurerm-aks](https://github.com/KT-MakeDevOpsEasy/terraform-azurerm-aks) — Reusable AKS module (used alongside this module)
