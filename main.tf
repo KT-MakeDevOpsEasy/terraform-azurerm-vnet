@@ -1,6 +1,33 @@
 locals {
+  required_tags = {
+    ManagedBy = "terraform"
+  }
+
+  merged_tags = merge(var.tags, local.required_tags)
+
+  default_nsg_deny_rule = {
+    name                       = "DenyAllInbound"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+  }
+
+  nsg_rules_with_deny = {
+    for subnet_key, rules in var.nsg_rules : subnet_key => concat(
+      rules,
+      [local.default_nsg_deny_rule]
+    )
+  }
+
+  effective_nsg_rules = var.enforce_deny_all_inbound ? local.nsg_rules_with_deny : var.nsg_rules
+
   nsg_rules_flat = flatten([
-    for nsg_key, rules in var.nsg_rules : [
+    for nsg_key, rules in local.effective_nsg_rules : [
       for rule in rules : merge(rule, { nsg_key = nsg_key })
     ]
   ])
@@ -12,7 +39,7 @@ resource "azurerm_virtual_network" "vnet" {
   location            = var.location
   address_space       = var.address_space
   dns_servers         = length(var.dns_servers) > 0 ? var.dns_servers : null
-  tags                = var.tags
+  tags                = local.merged_tags
 
   dynamic "ddos_protection_plan" {
     for_each = var.ddos_protection_plan_id != null ? [1] : []
@@ -48,12 +75,12 @@ resource "azurerm_subnet" "subnet" {
 }
 
 resource "azurerm_network_security_group" "nsg" {
-  for_each = var.nsg_rules
+  for_each = local.effective_nsg_rules
 
   name                = "nsg-${each.key}"
   resource_group_name = var.resource_group_name
   location            = var.location
-  tags                = var.tags
+  tags                = local.merged_tags
 }
 
 resource "azurerm_network_security_rule" "rule" {
@@ -75,7 +102,7 @@ resource "azurerm_network_security_rule" "rule" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg_assoc" {
-  for_each = var.nsg_rules
+  for_each = local.effective_nsg_rules
 
   subnet_id                 = azurerm_subnet.subnet[each.key].id
   network_security_group_id = azurerm_network_security_group.nsg[each.key].id

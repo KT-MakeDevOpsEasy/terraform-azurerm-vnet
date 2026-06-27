@@ -66,8 +66,14 @@ variable "ddos_protection_plan_id" {
   default     = null
 }
 
+variable "enforce_deny_all_inbound" {
+  description = "Automatically append a DenyAllInbound rule (priority 4096) to every NSG"
+  type        = bool
+  default     = true
+}
+
 variable "tags" {
-  description = "Tags to apply to all resources created by this module"
+  description = "Tags to apply to all resources (ManagedBy=terraform is always added)"
   type        = map(string)
   default     = {}
 }
